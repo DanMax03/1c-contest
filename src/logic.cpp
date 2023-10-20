@@ -40,6 +40,25 @@ namespace {
             return fentry1.size < fentry2.size;
         });
     }
+
+    void outputOnlyOneDirFiles(const app::FileEntries& dir1_file_entries, const app::FileEntries& dir2_file_entries) {
+        for (int i = 0; i < 2; ++i) {
+            const auto& file_entries = i == 0 ? dir1_file_entries : dir2_file_entries;
+            const std::string order = i == 0 ? "first" : "second";
+
+            printf("%s\n", ("Files which are only in the " + order + " directory:").c_str());
+
+            for (const auto& fentry : file_entries) {
+                printf("%s\n", fentry.entry.path().c_str());
+            }
+        }
+    }
+
+    void compareFileEntries(const app::DirsFileEntries& dirs_file_entries, float similarity) {
+        if (dirs_file_entries[0].empty() || dirs_file_entries[1].empty()) {
+            outputOnlyOneDirFiles(dirs_file_entries[0], dirs_file_entries[1]);
+        }
+    }
 }  // namespace
 
 namespace app::logic {
@@ -54,7 +73,7 @@ namespace app::logic {
             gatherFileEntries(iters[i], dirs_file_entries[i]);
         }
 
-        // compareFileEntries(dirs_file_entries);
+        compareFileEntries(dirs_file_entries, similarity);
 
         return 0;
     }
