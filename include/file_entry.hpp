@@ -11,4 +11,10 @@ namespace app {
         DirEntry entry;
         FileSize size;
     };
+
+    bool operator<(const FileEntry& a, const FileEntry& b);
+
+    bool isSameContents(std::ifstream& a_in, std::ifstream& b_in);
+    // (is_same, real_similarity)
+    std::pair<bool, float> compareFileEntriesContents(const FileEntry& a, const FileEntry& b, float similarity);
 }  // namespace app
