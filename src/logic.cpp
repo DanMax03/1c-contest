@@ -10,12 +10,24 @@
 namespace {
     struct TableEntry {
         int dir2_index{-1};
-        bool is_same{false};
         float real_similarity{0.f};
     };
 
+    struct TableRow {
+        void add_entry(int dir2_index, app::FilesComparisonResult comp_result, float real_similarity) {
+            if (comp_result == app::FilesComparisonResult::kSame) {
+                same.push_back(dir2_index);
+            } else {
+                similar.emplace_back(dir2_index, real_similarity);
+            }
+        }
+
+        std::vector<int> same;
+        std::vector<TableEntry> similar;
+    };
+
     // Mapping from dir1 files to dir2 files
-    using Table = std::vector<std::vector<TableEntry>>;
+    using Table = std::vector<TableRow>;
 
     void initDirIterators(app::DirIterators& iters, const app::DirPaths& dir_paths) {
         const auto dir_options = std::filesystem::directory_options::follow_directory_symlink;
@@ -65,10 +77,12 @@ namespace {
         }
     }
 
-    void compareFileEntries(const app::DirPaths& dir_paths,
+    Table compareFileEntries(const app::DirPaths& dir_paths,
                             const app::DirsFileEntries& dirs_file_entries,
                             const float similarity) {
         using app::FileEntry;
+        using app::FilesComparisonResult;
+
         if (dirs_file_entries[0].empty() || dirs_file_entries[1].empty()) {
             outputOnlyOneDirFiles(dir_paths, dirs_file_entries[0], dirs_file_entries[1]);
         }
@@ -84,7 +98,7 @@ namespace {
             const auto& dir1_fentry = dirs_file_entries[0][i];
             auto& row = table[i];
 
-            // todo: remove the cycle, use binsearch
+            // todo: remove the cycle across every file, use binary search
             for (int j = 0; j < dirs_file_entries[1].size(); ++j) {
                 const auto& dir2_fentry = dirs_file_entries[1][j];
 
@@ -98,13 +112,15 @@ namespace {
                     }
                 }
 
-                auto [is_same, real_similarity] = app::compareFileEntriesContents(dir1_fentry, dir2_fentry, similarity);
+                auto [comp_result, real_similarity] = app::compareFileEntriesContents(dir1_fentry, dir2_fentry, similarity);
 
-                if (is_same || real_similarity >= similarity) {
-                    row.emplace_back(j, is_same, real_similarity);
+                if (comp_result != FilesComparisonResult::kNotSimilar) {
+                    row.add_entry(j, comp_result, real_similarity);
                 }
             }
         }
+
+        return table;
     }
 }  // namespace
 
@@ -120,7 +136,7 @@ namespace app::logic {
             gatherFileEntries(iters[i], dirs_file_entries[i]);
         }
 
-        compareFileEntries(dir_paths, dirs_file_entries, similarity);
+        auto table = compareFileEntries(dir_paths, dirs_file_entries, similarity);
 
         return 0;
     }

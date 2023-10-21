@@ -15,6 +15,13 @@ namespace app {
     bool operator<(const FileEntry& a, const FileEntry& b);
 
     bool isSameContents(std::ifstream& a_in, std::ifstream& b_in);
-    // (is_same, real_similarity)
-    std::pair<bool, float> compareFileEntriesContents(const FileEntry& a, const FileEntry& b, float similarity);
+
+    enum class FilesComparisonResult {
+        kSame,
+        kSimilar,
+        kNotSimilar
+    };
+
+    // (result, real_similarity)
+    std::pair<FilesComparisonResult, float> compareFileEntriesContents(const FileEntry& a, const FileEntry& b, float similarity);
 }  // namespace app

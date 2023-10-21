@@ -1,8 +1,6 @@
 #include "file_entry.hpp"
 
-#include <climits>
 #include <fstream>
-#include <cstring>
 
 namespace app {
     FileEntry::FileEntry(const DirEntry& entry)
@@ -29,6 +27,7 @@ namespace app {
 
         return true;
 
+        // todo: maybe it is more efficient than the current solution
 //        static const std::streamsize chunk_size = 4096;
 //
 //        char a_chunk[chunk_size];
@@ -53,7 +52,7 @@ namespace app {
 //        return std::memcmp(a_chunk, b_chunk, chunk_size);
     }
 
-    std::pair<bool, float> compareFileEntriesContents(const FileEntry& a, const FileEntry& b, const float similarity) {
+    std::pair<FilesComparisonResult, float> compareFileEntriesContents(const FileEntry& a, const FileEntry& b, const float similarity) {
         // similarity argument is used to knock out comparison as soon as we find
         // that files are more unsimilar than (1 - similarity)
         static const std::streamsize chunk_size = 4096;
@@ -67,13 +66,11 @@ namespace app {
         a_in.rdbuf()->pubsetbuf(a_chunk, chunk_size);
         b_in.rdbuf()->pubsetbuf(b_chunk, chunk_size);
 
-        bool is_same = a.size == b.size;
+        bool is_same_size = a.size == b.size;
 
-        if (is_same) {
-            is_same = isSameContents(a_in, b_in/*, static_cast<std::streamsize>(a.size)*/);
-
-            if (is_same) {
-                return {is_same, 1.f};
+        if (is_same_size) {
+            if (isSameContents(a_in, b_in/*, static_cast<std::streamsize>(a.size)*/)) {
+                return {FilesComparisonResult::kSame, 1.f};
             }
 
             a_in.clear();
@@ -118,9 +115,9 @@ namespace app {
         auto real_similarity = static_cast<float>(static_cast<double>(dist) / static_cast<double>(max_size));
 
         if (real_similarity < similarity) {
-            return {is_same, 0.f};
+            return {FilesComparisonResult::kNotSimilar, 0.f};
         }
 
-        return {is_same, real_similarity};
+        return {FilesComparisonResult::kSimilar, real_similarity};
     }
 }  // namespace app
